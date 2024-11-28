@@ -1,0 +1,80 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/ipc.h>
+#include <sys/shm.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <string.h>
+
+#define SHM_SIZE 1024  // Size of the shared memory segment
+
+// Structure to represent shared memory data
+struct shared_data {
+    int produced;  // Flag to check if producer has produced the data
+    char data[100]; // The data produced by the producer
+};
+
+int main() {
+    key_t key = ftok("shmfile", 65);  // Generate a unique key for shared memory
+    if (key == -1) {
+        perror("ftok failed");
+        exit(1);
+    }
+
+    // Create shared memory segment
+    int shm_id = shmget(key, SHM_SIZE, 0666|IPC_CREAT);
+    if (shm_id == -1) {
+        perror("shmget failed");
+        exit(1);
+    }
+
+    // Attach the shared memory segment to this process
+    struct shared_data* shm_ptr = (struct shared_data*) shmat(shm_id, NULL, 0);
+    if ((void*)shm_ptr == (void*)-1) {
+        perror("shmat failed");
+        exit(1);
+    }
+
+    // Initialize shared memory variables
+    shm_ptr->produced = 0; // Set produced flag to 0 (nothing produced yet)
+
+    pid_t pid = fork(); // Create a child process (consumer)
+
+    if (pid < 0) {
+        perror("fork failed");
+        exit(1);
+    }
+
+    if (pid > 0) {
+        // Parent process (Producer)
+        // Write data to the shared memory
+        while (1) {
+            if (shm_ptr->produced == 0) { // If no data has been produced
+                printf("Producer: Enter data to produce: ");
+                fgets(shm_ptr->data, sizeof(shm_ptr->data), stdin);
+                shm_ptr->produced = 1; // Set produced flag to indicate data is ready
+                printf("Producer: Data produced: %s", shm_ptr->data);
+                sleep(2); // Simulate some delay for producing data
+            }
+        }
+    }
+    else {
+        // Child process (Consumer)
+        // Read data from the shared memory
+        while (1) {
+            if (shm_ptr->produced == 1) { // If data is produced
+                printf("Consumer: Data consumed: %s", shm_ptr->data);
+                shm_ptr->produced = 0; // Reset produced flag
+                sleep(2); // Simulate some delay for consuming data
+            }
+        }
+    }
+
+    // Detach the shared memory when done (in a real-world application, this would be done after finishing)
+    shmdt(shm_ptr);
+
+    // In a real scenario, you would remove the shared memory after finishing
+    // shmctl(shm_id, IPC_RMID, NULL);
+
+    return 0;
+}
