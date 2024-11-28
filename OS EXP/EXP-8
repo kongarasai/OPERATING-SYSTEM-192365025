@@ -1,0 +1,100 @@
+#include <stdio.h>
+
+// Define a structure to represent a process
+typedef struct Process {
+    int pid;           // Process ID
+    int burst_time;    // Burst time
+    int remaining_time; // Remaining burst time for the process
+    int waiting_time;  // Waiting time
+    int turnaround_time; // Turnaround time
+} Process;
+
+// Function to simulate Round Robin scheduling
+void roundRobinScheduling(Process processes[], int n, int time_quantum) {
+    int time = 0;  // Keeps track of the current time
+    int remaining_processes = n;  // Number of processes that have not yet finished
+
+    while (remaining_processes > 0) {
+        for (int i = 0; i < n; i++) {
+            if (processes[i].remaining_time > 0) {
+                // If the process still has remaining time
+                int time_slice = (processes[i].remaining_time <= time_quantum) ? processes[i].remaining_time : time_quantum;
+
+                // Simulate process execution for the current time slice
+                processes[i].remaining_time -= time_slice;
+                time += time_slice;
+
+                if (processes[i].remaining_time == 0) {
+                    // If process finishes, calculate turnaround time and waiting time
+                    processes[i].turnaround_time = time - processes[i].waiting_time;
+                    processes[i].waiting_time = processes[i].turnaround_time - processes[i].burst_time;
+                    remaining_processes--; // One process finished
+                } else {
+                    // Process is not yet finished, so it will be scheduled again
+                    processes[i].waiting_time += time_slice;
+                }
+            }
+        }
+    }
+}
+
+// Function to calculate and display the average waiting time and turnaround time
+void calculateAverageTimes(Process processes[], int n) {
+    int total_waiting_time = 0;
+    int total_turnaround_time = 0;
+
+    for (int i = 0; i < n; i++) {
+        total_waiting_time += processes[i].waiting_time;
+        total_turnaround_time += processes[i].turnaround_time;
+    }
+
+    printf("\nAverage Waiting Time: %.2f\n", (float)total_waiting_time / n);
+    printf("Average Turnaround Time: %.2f\n", (float)total_turnaround_time / n);
+}
+
+// Function to print the process details
+void printProcessDetails(Process processes[], int n) {
+    printf("\nProcess ID | Burst Time | Waiting Time | Turnaround Time\n");
+    printf("-----------------------------------------------------------\n");
+
+    for (int i = 0; i < n; i++) {
+        printf("%10d | %10d | %12d | %15d\n", processes[i].pid, processes[i].burst_time,
+                processes[i].waiting_time, processes[i].turnaround_time);
+    }
+}
+
+int main() {
+    int n, time_quantum;
+
+    // Input the number of processes
+    printf("Enter the number of processes: ");
+    scanf("%d", &n);
+
+    // Input the time quantum
+    printf("Enter the time quantum: ");
+    scanf("%d", &time_quantum);
+
+    // Declare an array of processes
+    Process processes[n];
+
+    // Input process details (PID and burst time)
+    for (int i = 0; i < n; i++) {
+        processes[i].pid = i + 1; // Assign PID starting from 1
+        printf("\nEnter burst time for Process %d: ", i + 1);
+        scanf("%d", &processes[i].burst_time);
+        processes[i].remaining_time = processes[i].burst_time; // Initially remaining time = burst time
+        processes[i].waiting_time = 0; // Initial waiting time is 0
+        processes[i].turnaround_time = 0; // Initial turnaround time is 0
+    }
+
+    // Simulate Round Robin scheduling
+    roundRobinScheduling(processes, n, time_quantum);
+
+    // Print process details (PID, Burst Time, Waiting Time, Turnaround Time)
+    printProcessDetails(processes, n);
+
+    // Calculate and print average waiting time and turnaround time
+    calculateAverageTimes(processes, n);
+
+    return 0;
+}
