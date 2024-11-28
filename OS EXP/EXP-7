@@ -1,0 +1,66 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+// Define a structure to represent a process
+typedef struct Process {
+    int pid;          // Process ID
+    int priority;     // Process priority (lower value indicates higher priority)
+    int burst_time;   // CPU burst time
+} Process;
+
+// Function to swap two processes based on priority
+void swap(Process* a, Process* b) {
+    Process temp = *a;
+    *a = *b;
+    *b = temp;
+}
+
+// Function to sort processes by priority (in ascending order)
+void sortByPriority(Process processes[], int n) {
+    for (int i = 0; i < n-1; i++) {
+        for (int j = 0; j < n-i-1; j++) {
+            if (processes[j].priority > processes[j+1].priority) {
+                swap(&processes[j], &processes[j+1]);
+            }
+        }
+    }
+}
+
+// Function to simulate process execution
+void executeProcesses(Process processes[], int n) {
+    printf("Process Execution Order (Highest Priority First):\n");
+
+    // Iterate through the processes in sorted order and execute them
+    for (int i = 0; i < n; i++) {
+        printf("Process ID: %d, Priority: %d, Burst Time: %d\n", processes[i].pid, processes[i].priority, processes[i].burst_time);
+    }
+}
+
+int main() {
+    int n;
+
+    // Input the number of processes
+    printf("Enter the number of processes: ");
+    scanf("%d", &n);
+
+    // Declare an array of processes
+    Process processes[n];
+
+    // Input process details (PID, priority, burst time)
+    for (int i = 0; i < n; i++) {
+        printf("\nEnter details for Process %d\n", i + 1);
+        processes[i].pid = i + 1;
+        printf("Priority (lower is higher priority): ");
+        scanf("%d", &processes[i].priority);
+        printf("Burst time: ");
+        scanf("%d", &processes[i].burst_time);
+    }
+
+    // Sort processes by priority
+    sortByPriority(processes, n);
+
+    // Execute the processes based on priority scheduling
+    executeProcesses(processes, n);
+
+    return 0;
+}
